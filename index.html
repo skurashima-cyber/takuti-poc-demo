@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>タクティ｜DC × Agentforce PoC デモ</title>
+<style>
+  :root{
+    --sf-blue:#0b5cab; --bg:#f3f6f9; --card:#fff; --line:#d8dde6; --ink:#16325c;
+    --muted:#5e6c84; --accent:#0176d3; --ok:#2e844a; --warn:#fe9339; --bad:#ba0517;
+    --chip:#eef4fb; --agent:#7e3ff2; --agent-bg:#f5f0ff;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Hiragino Kaku Gothic ProN","Yu Gothic UI","Segoe UI",sans-serif;
+    background:var(--bg);color:var(--ink);font-size:13px;}
+  /* Header */
+  header{background:var(--sf-blue);color:#fff;padding:10px 18px;display:flex;align-items:center;gap:14px;
+    box-shadow:0 2px 4px rgba(0,0,0,.15);flex-wrap:wrap;}
+  header .logo{font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px;}
+  header .logo .dot{width:24px;height:24px;border-radius:6px;background:#fff;color:var(--sf-blue);
+    display:flex;align-items:center;justify-content:center;font-weight:800;}
+  header .crumb{opacity:.85;font-size:12px;}
+  header .spacer{flex:1;}
+  header .who{font-size:12px;opacity:.92;display:flex;align-items:center;gap:7px;}
+  header .who .av{width:24px;height:24px;border-radius:50%;background:#0a4a8a;display:flex;align-items:center;
+    justify-content:center;font-size:11px;font-weight:700;}
+  /* Disclaimer */
+  .disclaimer{background:#fff8e1;border-bottom:1px solid #f0d98a;color:#7a5c00;
+    font-size:11.5px;padding:6px 18px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  /* Tabs */
+  .tabs{background:#fff;border-bottom:1px solid var(--line);padding:0 14px;display:flex;gap:4px;flex-wrap:wrap;}
+  .tab{padding:12px 16px;cursor:pointer;font-weight:700;font-size:13px;color:var(--muted);
+    border-bottom:3px solid transparent;display:flex;align-items:center;gap:7px;}
+  .tab .n{width:18px;height:18px;border-radius:50%;background:#e8eef5;color:var(--muted);font-size:11px;
+    display:flex;align-items:center;justify-content:center;font-weight:800;}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .tab.active .n{background:var(--accent);color:#fff;}
+  .tab small{font-weight:600;color:#9aa7b8;font-size:10.5px;}
+  .tab.ref{color:var(--agent);} .tab.ref .n{background:var(--agent-bg);color:var(--agent);}
+  .tab.ref.active{border-bottom-color:var(--agent);color:var(--agent);} .tab.ref.active .n{background:var(--agent);color:#fff;}
+  /* Layout */
+  .wrap{max-width:1180px;margin:0 auto;padding:16px;}
+  .view{display:none;}
+  .view.active{display:block;}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;
+    box-shadow:0 1px 2px rgba(0,0,0,.04);margin-bottom:16px;}
+  .panel-head{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:9px;}
+  .panel-head h2{font-size:14px;margin:0;font-weight:700;}
+  .panel-head .badge{margin-left:auto;font-size:11px;color:var(--muted);background:#eef2f7;border-radius:10px;padding:2px 9px;font-weight:600;}
+  .panel-body{padding:16px;}
+  .lead{color:var(--muted);font-size:12px;margin:0 0 14px;line-height:1.6;}
+  .us{font-size:11px;color:#7a869a;background:#f7f9fb;border-left:3px solid var(--accent);border-radius:4px;
+    padding:7px 10px;margin:0 0 14px;line-height:1.6;}
+
+  /* Agentforce console */
+  .ai-row{display:flex;gap:14px;align-items:flex-start;}
+  .ai-left{flex:1;min-width:0;}
+  .searchbar{display:flex;gap:8px;}
+  .searchbar input{flex:1;border:1.5px solid var(--accent);border-radius:8px;padding:11px 13px;font-size:13.5px;color:var(--ink);}
+  .searchbar input:focus{outline:none;box-shadow:0 0 0 3px rgba(1,118,211,.15);}
+  .searchbar button{border:none;background:var(--accent);color:#fff;border-radius:8px;padding:0 18px;font-weight:700;
+    font-size:13px;cursor:pointer;}
+  .chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px;}
+  .chip{background:var(--chip);color:var(--accent);border:1px solid #d6e6f6;border-radius:16px;padding:6px 12px;
+    font-size:11.5px;cursor:pointer;font-weight:600;transition:.12s;}
+  .chip:hover{background:#e2eefb;border-color:var(--accent);}
+
+  /* Agent answer bubble */
+  .agent-ans{margin-top:16px;border:1px solid #e7dcfa;background:var(--agent-bg);border-radius:10px;padding:14px;display:none;}
+  .agent-ans.show{display:block;animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+  .agent-tag{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--agent);font-weight:700;margin-bottom:10px;}
+  .agent-tag .ai{width:20px;height:20px;border-radius:6px;background:var(--agent);color:#fff;display:flex;
+    align-items:center;justify-content:center;font-size:11px;}
+  .agent-say{font-size:12.5px;line-height:1.6;color:var(--ink);margin-bottom:12px;}
+  .agent-say b{color:var(--agent);}
+
+  /* Navigator 回答 block */
+  .ans-head{font-weight:800;font-size:13px;color:var(--ink);display:flex;align-items:center;gap:9px;margin-bottom:9px;}
+  .cbadge{font-size:11px;font-weight:800;border-radius:12px;padding:2px 11px;}
+  .cbadge.h{background:#e7f3ec;color:var(--ok);} .cbadge.m{background:#fff0db;color:#a85b00;} .cbadge.l{background:#fbe7e7;color:var(--bad);}
+  .ans-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px 16px;background:#fff;border:1px solid #e7dcfa;border-radius:9px;padding:12px;}
+  .ans-grid .full{grid-column:1/-1;}
+  .ans-grid .al{display:block;font-size:10.5px;color:var(--muted);font-weight:700;margin-bottom:2px;}
+  .ans-grid .av{font-size:13.5px;font-weight:700;color:var(--ink);}
+  .sup-pill{display:inline-block;background:var(--chip);color:var(--accent);border-radius:13px;padding:3px 10px;font-size:12px;font-weight:700;margin:2px 4px 2px 0;}
+  .ans-note{font-size:11px;color:#6b4fb0;background:#f0e9fc;border-radius:6px;padding:7px 10px;margin-top:10px;}
+  .ev-title{font-size:11px;font-weight:800;color:var(--muted);margin:14px 0 8px;}
+  .none-box{font-size:12.5px;line-height:1.7;color:var(--bad);background:#fff;border:1px solid #f3c9c9;border-radius:9px;padding:13px;}
+  .none-box b{color:var(--bad);}
+
+  /* Result / evidence cards */
+  .res{background:#fff;border:1px solid var(--line);border-radius:9px;padding:11px 13px;margin-bottom:9px;
+    display:flex;gap:12px;align-items:center;}
+  .res.top{border-color:#bfe3cb;box-shadow:0 0 0 1px #bfe3cb;}
+  .rank{width:26px;height:26px;border-radius:50%;background:#eef2f7;color:var(--muted);font-weight:800;font-size:12px;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .res.top .rank{background:var(--ok);color:#fff;}
+  .res .main{flex:1;min-width:0;}
+  .res .pn{font-weight:800;font-size:13px;color:var(--accent);letter-spacing:.02em;}
+  .res .pn .lk{font-size:10.5px;color:var(--accent);text-decoration:underline;}
+  .res .nm{font-size:12px;color:var(--ink);margin-top:1px;}
+  .res .meta{font-size:11px;color:var(--muted);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap;}
+  .res .reason{font-size:10.5px;color:#6b4fb0;background:#f0e9fc;border-radius:5px;padding:2px 7px;margin-top:5px;display:inline-block;}
+  .src-tag{font-size:10px;font-weight:700;border-radius:5px;padding:1px 7px;background:#eef2f7;color:var(--muted);}
+  .src-tag.q{background:#e8f0fb;color:var(--accent);} .src-tag.m{background:#f0e9fc;color:#6b4fb0;}
+  .conf{flex-shrink:0;width:108px;text-align:right;}
+  .conf .pct{font-weight:800;font-size:15px;}
+  .conf .pct.h{color:var(--ok);} .conf .pct.m{color:var(--warn);} .conf .pct.l{color:var(--bad);}
+  .conf .bar{height:6px;border-radius:3px;background:#e8eef5;margin-top:4px;overflow:hidden;}
+  .conf .bar i{display:block;height:100%;border-radius:3px;}
+  .conf small{font-size:9.5px;color:var(--muted);display:block;margin-top:3px;}
+
+  /* Right rail */
+  .ai-right{width:240px;flex-shrink:0;}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:10px;padding:13px;}
+  .kpi h3{margin:0 0 9px;font-size:12px;color:var(--muted);font-weight:700;}
+  .kpi .row{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px dashed var(--line);}
+  .kpi .row:last-child{border-bottom:none;}
+  .kpi .row .k{font-size:11.5px;color:var(--muted);}
+  .kpi .row .v{font-weight:800;font-size:16px;}
+  .kpi .v.ok{color:var(--ok);}
+  .kpi .note{font-size:10px;color:#9aa7b8;margin-top:9px;line-height:1.5;}
+
+  /* Supplier weights */
+  .weights{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px 18px;margin-bottom:6px;
+    background:#f7f9fb;border:1px solid var(--line);border-radius:9px;padding:13px;}
+  .wt label{font-size:11.5px;color:var(--muted);font-weight:600;display:flex;justify-content:space-between;}
+  .wt label b{color:var(--accent);}
+  .wt small{font-size:9.5px;color:#9aa7b8;}
+  .wt input[type=range]{width:100%;accent-color:var(--accent);}
+  .scorebars{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap;}
+  .sb{font-size:9.5px;color:var(--muted);background:#f1f5f9;border-radius:4px;padding:1px 6px;}
+  .sb b{color:var(--ink);}
+  .acc-btns{display:flex;gap:5px;margin-top:7px;}
+  .acc-btns button{font-size:10px;font-weight:700;border-radius:5px;padding:3px 9px;cursor:pointer;border:1px solid var(--line);background:#fff;}
+  .acc-btns .y{color:var(--ok);border-color:#bfe3cb;} .acc-btns .y.on{background:var(--ok);color:#fff;}
+  .acc-btns .n{color:var(--bad);border-color:#f3c9c9;} .acc-btns .n.on{background:var(--bad);color:#fff;}
+
+  /* Table */
+  table{width:100%;border-collapse:collapse;font-size:12px;}
+  th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);vertical-align:middle;}
+  th{font-size:11px;color:var(--muted);background:#f7f9fb;font-weight:700;}
+  tr.overdue td{background:#fff5f5;}
+  .tag{font-size:10.5px;font-weight:700;border-radius:5px;padding:2px 8px;display:inline-block;}
+  .tag.yes{background:#fbe7e7;color:var(--bad);} .tag.no{background:#e7f3ec;color:var(--ok);} .tag.hold{background:#fff0db;color:#a85b00;}
+  .stage{font-size:10px;font-weight:700;border-radius:5px;padding:2px 7px;white-space:nowrap;}
+  .stage.s1{background:#fff0db;color:#a85b00;} .stage.s3{background:#fde7d6;color:#b3541e;} .stage.s7{background:#fbe7e7;color:var(--bad);}
+  .stage.s0{background:#eef2f7;color:var(--muted);}
+  .act{font-size:11px;color:var(--accent);font-weight:700;cursor:pointer;background:none;border:1px solid #cfe2f5;border-radius:6px;padding:5px 10px;}
+  .day-bad{color:var(--bad);font-weight:800;} .day-warn{color:var(--warn);font-weight:700;}
+  .miniask{margin:0 0 14px;font-size:12px;color:var(--ink);background:var(--agent-bg);border:1px solid #e7dcfa;
+    border-radius:9px;padding:11px 13px;display:flex;gap:9px;align-items:center;}
+  .miniask .ai{width:22px;height:22px;border-radius:6px;background:var(--agent);color:#fff;display:flex;
+    align-items:center;justify-content:center;font-size:12px;flex-shrink:0;}
+
+  /* OCR (reference / 別線) */
+  .ref-ribbon{background:var(--agent-bg);border:1px solid #e7dcfa;color:#5b3aa6;border-radius:9px;
+    padding:9px 13px;font-size:12px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .ref-ribbon .pill2{background:var(--agent);color:#fff;border-radius:12px;font-size:10.5px;padding:2px 9px;}
+  .ocr-docs{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
+  .doccard{flex:1;min-width:230px;border:1px solid var(--line);border-radius:9px;padding:11px 13px;background:#fafcfe;}
+  .doccard.q{background:#f7f3ff;border-color:#e7dcfa;}
+  .doccard .dt{font-size:10.5px;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:6px;}
+  .doccard .dt .ic{width:18px;height:18px;border-radius:5px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;}
+  .doccard.q .dt .ic{background:var(--agent);}
+  .doccard .dn{font-weight:800;font-size:14px;margin:5px 0 2px;}
+  .doccard .dm{font-size:11px;color:var(--muted);line-height:1.6;}
+  .ocrstat{font-size:10.5px;color:var(--ok);font-weight:700;margin-top:5px;}
+  .sumchips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+  .sumchip{font-size:11px;font-weight:700;border-radius:14px;padding:4px 11px;}
+  .sumchip.ok{background:#e7f3ec;color:var(--ok);} .sumchip.chk{background:#fff0db;color:#a85b00;} .sumchip.miss{background:#fbe7e7;color:var(--bad);}
+  .diff{font-size:10px;font-weight:700;border-radius:5px;padding:2px 7px;white-space:nowrap;}
+  .diff.match{background:#e7f3ec;color:var(--ok);} .diff.name{background:#fff0db;color:#a85b00;}
+  .diff.qty{background:#fde7d6;color:#b3541e;} .diff.new{background:#eef0fb;color:#3b4cc0;} .diff.miss{background:#fbe7e7;color:var(--bad);}
+  .ocrtbl td{font-size:11.5px;} .ocrtbl .ocrread{font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:11px;color:#16325c;}
+  .ocrtbl .src{font-size:9.5px;color:#9aa7b8;} .ocrtbl .cand{font-size:11px;color:var(--ink);} .ocrtbl .cand small{color:var(--muted);}
+  .confirm-btn{font-size:10.5px;font-weight:700;border:1px solid var(--agent);color:var(--agent);background:#fff;border-radius:6px;padding:4px 9px;cursor:pointer;}
+  .confirm-btn.done{background:var(--agent);color:#fff;}
+  .auto-lock{font-size:10.5px;color:var(--ok);font-weight:700;}
+  .ocr-foot{display:flex;align-items:center;gap:14px;margin-top:14px;padding-top:13px;border-top:1px solid var(--line);flex-wrap:wrap;}
+  .ocr-foot .prog{font-size:12px;color:var(--muted);font-weight:600;} .ocr-foot .prog b{color:var(--agent);}
+  .bulk{margin-left:auto;border:none;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:800;cursor:pointer;background:var(--agent);color:#fff;opacity:.45;pointer-events:none;}
+  .bulk.ready{opacity:1;pointer-events:auto;}
+
+  /* Modal */
+  .modal-bg{position:fixed;inset:0;background:rgba(16,50,92,.45);display:none;align-items:center;justify-content:center;padding:20px;z-index:50;}
+  .modal-bg.show{display:flex;}
+  .modal{background:#fff;border-radius:12px;max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.3);overflow:hidden;}
+  .modal .mh{background:var(--agent);color:#fff;padding:12px 16px;font-weight:700;font-size:13px;display:flex;align-items:center;gap:8px;}
+  .modal .mb{padding:16px;}
+  .modal .draft{border:1px solid var(--line);border-radius:8px;padding:13px;font-size:12px;line-height:1.7;white-space:pre-wrap;background:#fafcfe;}
+  .modal .qa{display:flex;gap:8px;margin-top:11px;}
+  .modal .qa button{flex:1;border:1px solid var(--accent);color:var(--accent);background:#eef4fb;border-radius:7px;padding:9px;font-size:11.5px;font-weight:700;cursor:pointer;}
+  .modal .mf{padding:12px 16px;border-top:1px solid var(--line);display:flex;gap:9px;justify-content:flex-end;}
+  .modal .mf button{border-radius:7px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;}
+  .modal .mf .send{background:var(--accent);color:#fff;border:none;} .modal .mf .cancel{background:#fff;color:var(--muted);border:1px solid var(--line);}
+  .foot{text-align:center;color:#9aa7b8;font-size:11px;padding:8px 0 24px;}
+  @media(max-width:860px){.ai-row{flex-direction:column;}.ai-right{width:100%;}.ans-grid{grid-template-columns:1fr;}.weights{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span class="dot">T</span> タクティ <span class="crumb">DC × Agentforce 業務支援エージェント</span></div>
+  <div class="spacer"></div>
+  <div class="who"><span class="av">中矢</span> 中矢様 ｜ 調達部</div>
+</header>
+
+<div class="disclaimer">⚠️ <b>&nbsp;要件定義書 v0.1 準拠のモックアップ&nbsp;</b>（仕様合意用）。サンプルデータで動作、実データ・Salesforce / Data 360 とは未接続。狙い＝検索/転記/督促の非付加価値時間（月682h）削減。精度KPI：TOP1 ≥ 70% / TOP3 ≥ 90%。</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="nav"><span class="n">1</span> Navigator<small>船別・部品検索</small></div>
+  <div class="tab" data-tab="sup"><span class="n">2</span> サプライヤー推奨<small>ハイブリッド(0.5/0.3/0.2)</small></div>
+  <div class="tab" data-tab="dun"><span class="n">3</span> 納期督促<small>Flow / 段階エスカ</small></div>
+  <div class="tab ref" data-tab="ocr"><span class="n">＋</span> 見積書突合（OCR）<small>Out of Scope・別線参考</small></div>
+</div>
+
+<div class="wrap">
+
+<!-- ============ TAB 1: NAVIGATOR ============ -->
+<div class="view active" id="view-nav">
+  <div class="panel">
+    <div class="panel-head"><h2>🔎 Navigator（船別・部品情報検索）</h2><span class="badge">Agentforce ＋ Data 360 / 過去見積を根拠に回答</span></div>
+    <div class="panel-body">
+      <p class="lead">営業が「<b>〇〇丸の FUEL OIL PUMP の製造業者は？</b>」のように自然言語で問い合わせると、過去見積・マスタを根拠に <b>製造業者／型式／推奨サプライヤーTOP3</b> を <b>確信度（高/中/低）</b>と<b>根拠リンク</b>つきで回答します。</p>
+      <p class="us">US-1-2 確信度を表示（低は人間判断）／ US-1-3 根拠となった過去見積（最大3件）へワンクリック ／ Q-N4 出力は <b>TOP3候補</b>で確定 ／ 0件時は推測せず「該当なし・手動確認を」（ハルシネーション0）</p>
+      <div class="ai-row">
+        <div class="ai-left">
+          <div class="searchbar">
+            <input id="navq" type="text" placeholder="例）M/V GLUE STAR の FUEL OIL PUMP の製造業者は？" autocomplete="off">
+            <button onclick="runNav()">問い合わせ</button>
+          </div>
+          <div class="chips" id="navchips"></div>
+          <div class="agent-ans" id="navans">
+            <div class="agent-tag"><span class="ai">AI</span> Agentforce ナビゲーター</div>
+            <div class="agent-say" id="navsay"></div>
+            <div id="navres"></div>
+          </div>
+        </div>
+        <div class="ai-right">
+          <div class="kpi">
+            <h3>受入基準（DoD §4.8）</h3>
+            <div class="row"><span class="k">TOP1 正解率</span><span class="v ok">75%</span></div>
+            <div class="row"><span class="k">TOP3 正解率</span><span class="v ok">92%</span></div>
+            <div class="row"><span class="k">応答時間(95p)</span><span class="v">4.1s</span></div>
+            <div class="row"><span class="k">ハルシネーション</span><span class="v ok">0件</span></div>
+            <div class="note">基準：TOP1≥70%/TOP3≥90%・全回答に確信度と根拠リンク・5秒以内。評価セット20問（実データ反映後に確定）。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TAB 2: SUPPLIER ============ -->
+<div class="view" id="view-sup">
+  <div class="panel">
+    <div class="panel-head"><h2>🤝 サプライヤー自動検出（推奨）</h2><span class="badge">ルール×類似×マスタ のハイブリッド加重</span></div>
+    <div class="panel-body">
+      <p class="lead">見積品目の登録時に、各品目の <b>推奨サプライヤー TOP3</b> を確信度・推奨理由つきで自動提示（§5.4）。スコア＝<b>0.5×ルール ＋ 0.3×類似 ＋ 0.2×マスタ</b>。重みを動かすとその場で再計算します（Q-R2の合意用）。</p>
+      <p class="us">US-2-2 各候補に推奨理由（過去成約X回／同型船舶でY回 等）／ US-2-3 採用・却下をワンクリック記録（学習用 Accepted__c）／ Q-R4 採用は <b>手動承認</b>必須（自動採用しない）</p>
+      <div class="ai-row">
+        <div class="ai-left">
+          <div style="margin-bottom:12px;">
+            <label style="font-size:12px;color:var(--muted);font-weight:700;">見積品目（船舶 × 部品）</label><br>
+            <select id="supitem" onchange="rankSup()" style="margin-top:6px;border:1px solid var(--line);border-radius:7px;padding:9px 11px;font-size:13px;width:100%;max-width:460px;">
+              <option value="0">M/V GLUE STAR ／ FUEL OIL PUMP（YANMAR 6EY26-2A）</option>
+              <option value="1">M/V OCEAN GLUE ／ LUB. OIL PUMP（TAIKO KIKAI）</option>
+              <option value="2">M/V GLUE STAR ／ AIR COMPRESSOR（MATSUBARA）</option>
+            </select>
+          </div>
+          <div class="weights">
+            <div class="wt"><label>① ルール <b id="w0v">50%</b></label><input type="range" id="w0" min="0" max="100" value="50" oninput="rankSup()"><small>同船舶×同PartNo 直近成約</small></div>
+            <div class="wt"><label>② 類似 <b id="w1v">30%</b></label><input type="range" id="w1" min="0" max="100" value="30" oninput="rankSup()"><small>同型船舶×同PartNo（Embeddings）</small></div>
+            <div class="wt"><label>③ マスタ <b id="w2v">20%</b></label><input type="range" id="w2" min="0" max="100" value="20" oninput="rankSup()"><small>正規代理店フラグ</small></div>
+          </div>
+          <div class="agent-ans show" id="supans" style="margin-top:14px;">
+            <div class="agent-tag"><span class="ai">AI</span> Agentforce 推奨エンジン（RecommendedSupplier__c）</div>
+            <div class="agent-say" id="supsay"></div>
+            <div id="supres"></div>
+          </div>
+        </div>
+        <div class="ai-right">
+          <div class="kpi">
+            <h3>受入基準（DoD §5.7）</h3>
+            <div class="row"><span class="k">TOP1 採用率</span><span class="v ok">64%</span></div>
+            <div class="row"><span class="k">TOP3 採用率</span><span class="v ok">88%</span></div>
+            <div class="row"><span class="k">推奨表示(95p)</span><span class="v">2.6s</span></div>
+            <div class="note">基準：TOP1採用率≥60%/TOP3≥85%・全推奨に理由テキスト・3秒以内・採否を記録。重み配分(0.5/0.3/0.2)は定例で合意。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TAB 3: DUNNING ============ -->
+<div class="view" id="view-dun">
+  <div class="panel">
+    <div class="panel-head"><h2>⏰ 納期遅延の自動督促（Flow）</h2><span class="badge">PurchaseOrder__c / Schedule-Triggered 平日09:00</span></div>
+    <div class="panel-body">
+      <p class="lead">「発注済 かつ 納期超過」の発注を Flow が毎営業日09:00に検知。<b>超過+1営業日＝担当へ初回</b>、<b>+3営業日＝再督促</b>、<b>+7営業日＝上長へエスカ</b>の段階通知（§6.3）。回答済・出荷済は督促せず、再督促は3営業日に1回（鳴りすぎ防止）。</p>
+      <div class="miniask"><span class="ai">AI</span><div>本日 <b>2026/06/10（平日09:00 実行）</b>：督促対象 <b style="color:var(--bad)">3 件</b>（初回1・再督促1・エスカ1）。1件は再督促インターバル内のため保留。Slack DM に「納期更新／連絡記録」アクションを添付します。</div></div>
+      <table>
+        <thead><tr>
+          <th>発注 (PurchaseOrder__c)</th><th>船 / 部品</th><th>発注先</th><th>納期</th><th>超過</th><th>段階</th><th>通知先</th><th>督促判定</th><th>アクション</th>
+        </tr></thead>
+        <tbody id="duntbl"></tbody>
+      </table>
+      <div class="kpi" style="margin-top:14px;max-width:none;">
+        <h3>受入基準（DoD §6.7）</h3>
+        <div style="display:flex;gap:26px;flex-wrap:wrap;">
+          <div class="row" style="border:none;gap:10px;"><span class="k">超過案件の通知漏れ</span><span class="v ok">0件</span></div>
+          <div class="row" style="border:none;gap:10px;"><span class="k">再督促＝3営業日に1回</span><span class="v ok">遵守</span></div>
+          <div class="row" style="border:none;gap:10px;"><span class="k">上長エスカ(7営業日)</span><span class="v ok">1回のみ</span></div>
+        </div>
+        <div class="note">基準：通知漏れ0・土日祝スキップ・エスカ重複なし・Slackから「納期更新」実行可。論点 Q-F1 祝日カレンダー / Q-F4 エスカ閾値(固定 or 金額連動)。</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TAB 4: OCR 突合（別線スコープ参考） ============ -->
+<div class="view" id="view-ocr">
+  <div class="ref-ribbon"><span class="pill2">別線スコープ</span> 参考イメージ：Apollo（OCR）は本PoCの <b>Out of Scope（§1.2）＝第二弾として別途検討</b>。要件定義書では「<b>将来連携前提</b>」として項目設計のみ反映済。5/28議論の体験イメージとして提示します。</div>
+  <div class="panel">
+    <div class="panel-head"><h2>📄 見積書突合（OCR）</h2><span class="badge">RFQ ↔ Vendor_Quote 明細自動突合</span></div>
+    <div class="panel-body">
+      <p class="lead">サプライヤー返送の<b>見積書PDFをOCR読取</b>り、依頼書（RFQ）と<b>明細単位で自動突合</b>。高確度一致は自動確定、<b>表記揺れ・差異のある明細だけを「要確認」</b>として人が確定 → ボタンで一括反映（自動反映しない＝5/28合意のハイブリッド方式）。</p>
+      <div class="ocr-docs">
+        <div class="doccard">
+          <div class="dt"><span class="ic">依</span> 依頼書（RFQ__c）</div>
+          <div class="dn" id="ocrRfqNo">EN-2026-0418</div>
+          <div class="dm"><span id="ocrRfqVessel">M/V GLUE STAR</span> ／ <span id="ocrRfqMeta">主機まわり 5明細 ・ 依頼日 2026/06/01 ・ 希望納期 2026/06/20</span></div>
+        </div>
+        <div class="doccard q">
+          <div class="dt"><span class="ic">見</span> 見積書（Vendor_Quote__c）</div>
+          <div class="dn" id="ocrQuoteNo">QT-7741</div>
+          <div class="dm"><span id="ocrQuoteSup">ヤンマー舶用システム</span> ／ <span id="ocrQuoteMeta">見積日 2026/06/07 ・ 有効期限 06/30</span></div>
+          <div class="ocrstat">✓ OCR読取完了（信頼度 平均94%）</div>
+        </div>
+      </div>
+      <div class="sumchips">
+        <span class="sumchip ok">自動一致 <b id="cOk">2</b></span>
+        <span class="sumchip chk">要確認 <b id="cChk">3</b></span>
+        <span class="sumchip miss">欠落（見積なし） <b>1</b></span>
+      </div>
+      <table class="ocrtbl">
+        <thead><tr><th>#</th><th>見積書（OCR読取）</th><th>突合先（依頼書 RFQ_Line）</th><th>差異 (Diff_Type__c)</th><th>確度</th><th>確認</th></tr></thead>
+        <tbody id="ocrtbl"></tbody>
+      </table>
+      <div class="ocr-foot">
+        <span class="prog">人手確認：<b id="ocrProg">0</b> / 3 件 確定済</span>
+        <button class="bulk" id="bulkBtn" onclick="bulkUpdate()">確認済を一括反映（Salesforce更新）</button>
+      </div>
+      <div class="kpi" style="margin-top:16px;max-width:none;">
+        <h3>このテーマ（別線）の評価軸イメージ</h3>
+        <div style="display:flex;gap:26px;flex-wrap:wrap;">
+          <div class="row" style="border:none;gap:10px;"><span class="k">突合整合率</span><span class="v ok">91%</span></div>
+          <div class="row" style="border:none;gap:10px;"><span class="k">自動確定率（人手不要）</span><span class="v ok">68%</span></div>
+          <div class="row" style="border:none;gap:10px;"><span class="k">対応フォーマット数</span><span class="v">主要5メーカー</span></div>
+        </div>
+        <div class="note">※ 5/28の成功基準（読取精度／突合整合率／対応フォーマット数 × 時間短縮）に対応。別線として正式化する場合は別途お見積り・評価設計を行います（リスク R-6：期待値ズレ防止）。</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="foot">タクティ株式会社 ｜ DC × Agentforce PoC（2026/5–7）モックアップ ｜ 要件定義書 v0.1 準拠 ｜ Glue Inc.</div>
+</div>
+
+<!-- Modal -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <div class="mh" id="modalHead"><span style="background:#fff;color:var(--agent);width:20px;height:20px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;">AI</span> 通知メッセージ（Slack DM）</div>
+    <div class="mb"><div class="draft" id="draft"></div><div class="qa" id="modalQa"></div></div>
+    <div class="mf"><button class="cancel" onclick="closeModal()">閉じる</button><button class="send" onclick="closeModal()">この内容で送信</button></div>
+  </div>
+</div>
+
+<script src="demo_data.public.js"></script>
+<script>
+/* ---------- データソース（実データ/匿名データ）。未ロード時は内蔵フォールバック ---------- */
+const DEMO = window.TACTI_DEMO || null;
+if (DEMO && DEMO.mode) {
+  const tag = document.querySelector('.disclaimer');
+  if (tag && DEMO.mode === 'public') tag.insertAdjacentHTML('beforeend',
+    ' <b style="margin-left:6px;color:#7e3ff2">｜実見積59件ベース（匿名化）</b>');
+  if (tag && DEMO.mode === 'real') tag.insertAdjacentHTML('beforeend',
+    ' <b style="margin-left:6px;color:#ba0517">｜⚠内部版：実データ表示中</b>');
+}
+/* ---------- Tab switching ---------- */
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  document.getElementById('view-'+t.dataset.tab).classList.add('active');
+});
+function confClass(c){return c>=80?'h':c>=60?'m':'l';}
+function confColor(c){return c>=80?'var(--ok)':c>=60?'var(--warn)':'var(--bad)';}
+
+/* ===================== THEME 1: Navigator ===================== */
+// 出力 = 製造業者/型式/推奨サプライヤーTOP3 + 確信度(高/中/低) + 根拠(過去見積 最大3件)
+const FALLBACK_NAV = [
+  { q:"M/V GLUE STAR の FUEL OIL PUMP の製造業者は？", conf:"高",
+    maker:"YANMAR", model:"6EY26-2A",
+    suppliers:["ヤンマー舶用システム","Fuji Trading","Wärtsilä Japan"],
+    say:"同船舶 <b>M/V GLUE STAR</b> ×「FUEL OIL PUMP」で直近1年に成約3件を確認。確信度は <b>高</b>。製造業者・型式を断定し、推奨サプライヤーをTOP3候補で提示します。",
+    ev:[
+      {src:"q",id:"Q-2025-08134",detail:"M/V GLUE STAR / 2025-11 ・ PartNo 12345 ・ ¥1,200,000（成約）"},
+      {src:"m",id:"P-00872",detail:"商品マスタ ・ PartNo 12345 ・ Maker: YANMAR ・ 型式 6EY26-2A"},
+    ]},
+  { q:"M/V SAKURA MARU の SPECIAL VALVE の製造業者は？", conf:"なし", none:true, say:"" },
+];
+const navScenarios = (DEMO && DEMO.navigator && DEMO.navigator.length) ? DEMO.navigator : FALLBACK_NAV;
+function confBadge(c){return c==='高'?'h':c==='中'?'m':'l';}
+function renderNav(s){
+  const say=document.getElementById('navsay'), res=document.getElementById('navres');
+  if(s.none){
+    say.innerHTML=`<div class="none-box">該当する過去見積・マスタが見つかりませんでした。<br><b>「該当データがありません。手動確認をお願いします」</b><br><span style="color:var(--muted);font-size:11px;">※ 推測で製造業者は回答しません（§4.6 禁則・ハルシネーション0の設計）。0件時は同型船舶への拡張可否を確認します（Q-N3）。</span></div>`;
+    res.innerHTML=''; document.getElementById('navans').classList.add('show'); return;
+  }
+  say.innerHTML=`
+    <div class="ans-head">【回答】 <span class="cbadge ${confBadge(s.conf)}">確信度: ${s.conf}</span></div>
+    <div class="ans-grid">
+      <div><span class="al">製造業者</span><span class="av">${s.maker}</span></div>
+      <div><span class="al">型式</span><span class="av">${s.model}</span></div>
+      <div class="full"><span class="al">推奨サプライヤー TOP3</span><span class="av">${s.suppliers.filter(x=>x&&x!=='—').map((x,i)=>`<span class="sup-pill">${i+1}. ${x}</span>`).join('')}</span></div>
+    </div>
+    ${s.note?`<div class="ans-note">⚠️ ${s.note}</div>`:''}`;
+  res.innerHTML=`<div class="ev-title">【根拠】参照レコード（最大3件・クリックで原本へ）</div>`+s.ev.map(e=>`
+    <div class="res">
+      <div class="main">
+        <div class="pn"><span class="src-tag ${e.src}">${e.src==='q'?'過去見積':'商品マスタ'}</span> <span class="lk">${e.id} ↗</span></div>
+        <div class="meta">${e.detail}</div>
+      </div>
+    </div>`).join('');
+  document.getElementById('navans').classList.add('show');
+}
+function runNav(){
+  const q=document.getElementById('navq').value.trim().toLowerCase();
+  let best=navScenarios[0],score=-1;
+  navScenarios.forEach(s=>{
+    const words=s.q.toLowerCase().match(/[a-z0-9\/]+|[一-龠ぁ-んァ-ヶー]+/g)||[];
+    let sc=0; words.forEach(w=>{if(w.length>1&&q.includes(w))sc++;});
+    if(sc>score){score=sc;best=s;}
+  });
+  document.getElementById('navq').value=best.q; renderNav(best);
+}
+const navChipsEl=document.getElementById('navchips');
+navScenarios.forEach(s=>{const c=document.createElement('div');c.className='chip';
+  c.textContent=(s.none?'🚫 ':'💬 ')+s.q;
+  c.onclick=()=>{document.getElementById('navq').value=s.q;renderNav(s);};navChipsEl.appendChild(c);});
+renderNav(navScenarios[0]);
+document.getElementById('navq').addEventListener('keydown',e=>{if(e.key==='Enter')runNav();});
+
+/* ===================== THEME 2: Supplier ===================== */
+// sub-scores 0-1: rule(同船舶×同PartNo成約) / sim(同型船舶 Embeddings) / master(正規代理店)
+const FALLBACK_SUP=[
+  { label:"M/V GLUE STAR ／ FUEL OIL PUMP（YANMAR）", candidates:[
+    {name:"ヤンマー舶用システム",rule:0.95,sim:0.88,master:1.0,reason:"同船舶 × 同PartNo で直近過去3回成約。YANMAR 正規代理店。",dealer:true},
+    {name:"Fuji Trading",rule:0.40,sim:0.82,master:0.50,reason:"同型船舶で同PartNo成約5回（類似度0.86）。",dealer:false},
+    {name:"Wärtsilä Japan",rule:0.10,sim:0.58,master:0.35,reason:"型式の類似品で実績。価格は高め。",dealer:false},
+  ]},
+];
+const SUP = (DEMO && DEMO.suppliers && DEMO.suppliers.items && DEMO.suppliers.items.length) ? DEMO.suppliers.items : FALLBACK_SUP;
+// ドロップダウンを動的生成
+document.getElementById('supitem').innerHTML = SUP.map((it,i)=>`<option value="${i}">${it.label}</option>`).join('');
+let supAccept={};
+function rankSup(){
+  const idx=+document.getElementById('supitem').value;
+  let w=[+w0.value,+w1.value,+w2.value];
+  const sum=w.reduce((a,b)=>a+b,0)||1;
+  const pc=w.map(x=>Math.round(x/sum*100));
+  ['w0v','w1v','w2v'].forEach((id,i)=>document.getElementById(id).textContent=pc[i]+'%');
+  const list=SUP[idx].candidates.map((s,i)=>{
+    const conf=(s.rule*w[0]+s.sim*w[1]+s.master*w[2])/sum; // 0-1
+    return {...s,conf,oi:i};
+  }).sort((a,b)=>b.conf-a.conf);
+  const top=list[0];
+  document.getElementById('supsay').innerHTML=
+    `現在の重み（ルール${pc[0]}% / 類似${pc[1]}% / マスタ${pc[2]}%）では、<b>${top.name}</b> を第1候補（確信度 ${top.conf.toFixed(2)}）として推奨します。各候補の理由は Reason__c に自動生成されます。`;
+  document.getElementById('supres').innerHTML=list.slice(0,3).map((s,i)=>{
+    const p=Math.round(s.conf*100);
+    const a=supAccept[idx+'-'+s.oi];
+    return `
+    <div class="res ${i===0?'top':''}">
+      <div class="rank">${i+1}</div>
+      <div class="main">
+        <div class="pn" style="color:var(--ink)">${s.name} ${s.dealer?'<span class="src-tag m">正規代理店</span>':''}</div>
+        <div class="reason">理由：${s.reason}</div>
+        <div class="scorebars">
+          <span class="sb">ルール <b>${s.rule.toFixed(2)}</b></span>
+          <span class="sb">類似 <b>${s.sim.toFixed(2)}</b></span>
+          <span class="sb">マスタ <b>${s.master.toFixed(2)}</b></span>
+        </div>
+        <div class="acc-btns">
+          <button class="y ${a==='y'?'on':''}" onclick="setAccept(${idx},${s.oi},'y')">採用</button>
+          <button class="n ${a==='n'?'on':''}" onclick="setAccept(${idx},${s.oi},'n')">却下</button>
+          <span style="font-size:10px;color:var(--muted);align-self:center;">${a==='y'?'→ Supplier__c に反映（手動承認）':a==='n'?'→ 却下理由を記録（学習用）':''}</span>
+        </div>
+      </div>
+      <div class="conf">
+        <div class="pct ${confClass(p)}">${s.conf.toFixed(2)}</div>
+        <div class="bar"><i style="width:${p}%;background:${confColor(p)}"></i></div>
+        <small>Confidence__c</small>
+      </div>
+    </div>`;}).join('');
+}
+function setAccept(idx,oi,v){supAccept[idx+'-'+oi]=supAccept[idx+'-'+oi]===v?null:v;rankSup();}
+rankSup();
+
+/* ===================== THEME 3: Dunning ===================== */
+const FALLBACK_DUN=[
+  {po:"PO-2026-00128",ship:"M/V GLUE STAR / FUEL OIL PUMP",sup:"ヤンマー舶用システム",due:"2026/06/09",days:1,bizd:1,
+   stage:"初回督促",sc:"s1",to:"担当（田中）",judge:"yes",
+   draft:`🚢 納期遅延通知（超過 1 営業日）\n案件: P-2026-00128 / M/V GLUE STAR / FUEL OIL PUMP\n発注先: ヤンマー舶用システム\n納期: 2026-06-09（→ 2026-06-10 現在）\n担当: 田中さん`},
+  {po:"PO-2026-00131",ship:"M/V OCEAN GLUE / LUB OIL PUMP",sup:"大晃機械サービス",due:"2026/06/05",days:3,bizd:3,
+   stage:"再督促(3営業日)",sc:"s3",to:"担当（田中）",judge:"yes",
+   draft:`🚢 納期遅延通知（超過 3 営業日・再督促）\n案件: P-2026-00131 / M/V OCEAN GLUE / LUB OIL PUMP\n発注先: 大晃機械サービス\n納期: 2026-06-05（→ 2026-06-10 現在）\n担当: 田中さん`},
+  {po:"PO-2026-00119",ship:"M/V GLUE STAR / AIR COMPRESSOR",sup:"松原鉄工サービス",due:"2026/05/29",days:8,bizd:7,
+   stage:"上長エスカ(7営業日)",sc:"s7",to:"上長（佐藤）",judge:"yes",
+   draft:`🚨 納期遅延エスカレーション（超過 7 営業日）\n案件: P-2026-00119 / M/V GLUE STAR / AIR COMPRESSOR\n発注先: 松原鉄工サービス\n納期: 2026-05-29（→ 2026-06-10 現在）\n担当: 田中さん ／ エスカ先: 佐藤課長`},
+  {po:"PO-2026-00140",ship:"M/V SAKURA GLUE / COOLER",sup:"西日本船用品",due:"2026/06/12",days:-2,bizd:0,
+   stage:"—",sc:"s0",to:"—",judge:"no",reason:"納期内・回答済 → 督促不要"},
+  {po:"PO-2026-00125",ship:"M/V OCEAN GLUE / V-BELT",sup:"バンドー代理店",due:"2026/06/01",days:9,bizd:7,
+   stage:"出荷済",sc:"s0",to:"—",judge:"no",reason:"出荷済（連絡漏れ）→ ステータス更新依頼"},
+  {po:"PO-2026-00133",ship:"M/V GLUE STAR / IMPELLER",sup:"神戸シップサプライ",due:"2026/06/06",days:4,bizd:2,
+   stage:"再督促 保留",sc:"s0",to:"担当（田中）",judge:"hold",reason:"前回督促から3営業日未経過 → 保留"},
+];
+const dunRows=(DEMO&&DEMO.dunning&&DEMO.dunning.length)?DEMO.dunning:FALLBACK_DUN;
+document.getElementById('duntbl').innerHTML=dunRows.map((r,i)=>{
+  const dayCls=r.bizd>=7?'day-bad':r.bizd>=3?'day-warn':'';
+  const tagTxt=r.judge==='yes'?'督促する':r.judge==='no'?'督促しない':'保留';
+  const overdue=r.judge==='yes'?'overdue':'';
+  const daysTxt=r.days<0?`${-r.days}日前`:`+${r.days}日`;
+  const act=r.judge==='yes'?`<button class="act" onclick="openDraft(${i})">Slack DM 生成</button>`:`<span style="color:var(--muted);font-size:11px;">${r.reason||''}</span>`;
+  return `<tr class="${overdue}">
+    <td><b>${r.po}</b></td><td>${r.ship}</td><td>${r.sup}</td><td>${r.due}</td>
+    <td class="${dayCls}">${daysTxt}<div style="font-size:9.5px;color:var(--muted)">${r.bizd}営業日</div></td>
+    <td><span class="stage ${r.sc}">${r.stage}</span></td><td style="font-size:11px;">${r.to}</td>
+    <td><span class="tag ${r.judge}">${tagTxt}</span></td><td>${act}</td></tr>`;
+}).join('');
+function openDraft(i){
+  document.getElementById('modalHead').innerHTML=`<span style="background:#fff;color:var(--agent);width:20px;height:20px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;">AI</span> Agentforce が督促メッセージ（Slack DM）を生成`;
+  document.getElementById('draft').textContent=dunRows[i].draft;
+  document.getElementById('modalQa').innerHTML=`<button>📅 納期を更新する</button><button>📝 サプライヤー連絡を記録する</button>`;
+  document.getElementById('modal').classList.add('show');
+}
+function closeModal(){document.getElementById('modal').classList.remove('show');}
+document.getElementById('modal').onclick=e=>{if(e.target.id==='modal')closeModal();};
+
+/* ===================== THEME 4: OCR 突合（別線） ===================== */
+const FALLBACK_OCR_ROWS=[
+  {ln:1, read:"FUEL OIL PUMP 12345", qty:"2 PC", price:"¥1,200,000", src:"P.1 行2",
+   cand:"FUEL OIL PUMP / PartNo 12345（YANMAR 6EY26-2A）", candNote:"品名・品番ともに一致",
+   diff:["match","一致"], conf:96, status:"auto"},
+  {ln:2, read:"F/O PUMP GASKET 12345-G", qty:"1 SET", price:"¥21,500", src:"P.1 行5",
+   cand:"フューエルポンプ ガスケット / PartNo 12345-G", candNote:"品名が英略称。AI類似度で同一と判定（候補3件）",
+   diff:["name","品名 表記差異"], conf:78, status:"check"},
+  {ln:3, read:"COOLING SW PUMP SEAL 80", qty:"3 PC", price:"¥12,800", src:"P.2 行1",
+   cand:"海水ポンプ メカニカルシール 80mm / TK-MS-080", candNote:"品番一致。数量が相違（依頼2 / 見積3）",
+   diff:["qty","数量差異 (2→3)"], conf:88, status:"check"},
+  {ln:4, read:"O-RING SET (主機点検用)", qty:"4 PC", price:"¥1,200", src:"P.2 行4",
+   cand:"（依頼書に該当なし）", candNote:"見積書のみに存在＝サプライヤー提案の追加品。採否を確認",
+   diff:["new","新規（依頼外）"], conf:0, status:"check"},
+  {ln:"—", read:"（見積書に記載なし）", qty:"—", price:"—", src:"—",
+   cand:"AIR COMPRESSOR VALVE / 1 PC（依頼書 行5）", candNote:"依頼したが見積もられていない明細。再見積を依頼",
+   diff:["miss","欠落（未見積）"], conf:0, status:"miss"},
+];
+const ocrRows=(DEMO&&DEMO.ocr&&DEMO.ocr.rows&&DEMO.ocr.rows.length)?DEMO.ocr.rows:FALLBACK_OCR_ROWS;
+// OCRヘッダ（依頼書/見積書カード）をデータから設定
+if(DEMO&&DEMO.ocr&&DEMO.ocr.rows){const o=DEMO.ocr;const set=(id,v)=>{const e=document.getElementById(id);if(e&&v)e.textContent=v;};
+  set('ocrRfqNo',o.rfqNo);set('ocrRfqVessel',o.rfqVessel);set('ocrRfqMeta',o.rfqMeta);
+  set('ocrQuoteNo',o.quoteNo);set('ocrQuoteSup',o.quoteSupplier);set('ocrQuoteMeta',o.quoteMeta);}
+let ocrConfirmed={};
+function renderOcr(){
+  document.getElementById('ocrtbl').innerHTML=ocrRows.map((r,i)=>{
+    const confHtml=r.conf>0
+      ? `<div class="conf" style="width:84px"><div class="pct ${confClass(r.conf)}">${r.conf}%</div><div class="bar"><i style="width:${r.conf}%;background:${confColor(r.conf)}"></i></div></div>`
+      : `<span style="color:#9aa7b8;font-size:11px;">—</span>`;
+    let cc;
+    if(r.status==='auto') cc=`<span class="auto-lock">✓ 自動確定</span>`;
+    else if(r.status==='miss') cc=`<span style="font-size:10.5px;color:var(--bad);font-weight:700;">再見積を依頼</span>`;
+    else {const d=ocrConfirmed[i];cc=`<button class="confirm-btn ${d?'done':''}" onclick="toggleOcr(${i})">${d?'✓ 確定済':'内容を確認 ▸'}</button>`;}
+    return `<tr>
+      <td><b>${r.ln}</b></td>
+      <td><div class="ocrread">${r.read}</div><div class="src">📎 ${r.src} ・ ${r.qty} ・ ${r.price}</div></td>
+      <td><div class="cand">${r.cand}</div><div class="cand"><small>${r.candNote}</small></div></td>
+      <td><span class="diff ${r.diff[0]}">${r.diff[1]}</span></td>
+      <td>${confHtml}</td><td>${cc}</td></tr>`;
+  }).join('');
+  const total=ocrRows.filter(r=>r.status==='check').length;
+  const done=Object.values(ocrConfirmed).filter(Boolean).length;
+  document.getElementById('ocrProg').textContent=done;
+  document.getElementById('cChk').textContent=total-done;
+  document.getElementById('cOk').textContent=ocrRows.filter(r=>r.status==='auto').length+done;
+  document.getElementById('bulkBtn').classList.toggle('ready',done===total);
+}
+function toggleOcr(i){ocrConfirmed[i]=!ocrConfirmed[i];renderOcr();}
+function bulkUpdate(){
+  const n=ocrRows.filter(r=>r.status==='auto').length+Object.values(ocrConfirmed).filter(Boolean).length;
+  document.getElementById('modalHead').innerHTML=`<span style="background:#fff;color:var(--agent);width:20px;height:20px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;">AI</span> 突合結果を一括反映しました`;
+  document.getElementById('draft').textContent=
+    `✅ Salesforce 反映完了（モック）\n\n突合確定した ${n} 明細を Vendor_Quote_Line__c に反映しました。\n・自動一致 2 明細 → Line_Status__c = 確定\n・人手確認 3 明細 → Diff_Type__c 記録のうえ確定\n・欠落 1 明細 → 再見積依頼タスクを起票\n\n※ これは別線スコープ（Out of Scope）の参考デモです。実際の反映は未実行です。`;
+  document.getElementById('modalQa').innerHTML='';
+  document.getElementById('modal').classList.add('show');
+}
+renderOcr();
+</script>
+</body>
+</html>

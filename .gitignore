@@ -1,0 +1,8 @@
+# 実データ（実在船名・サプライヤー・価格）は公開しない
+data/_raw/
+data/quotes_real.json
+data/demo_data.real.js
+index.internal.html
+*.real.json
+# 元zip・元見積はリポジトリに含めない
+*.zip
