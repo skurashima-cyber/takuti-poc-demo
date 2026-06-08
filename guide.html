@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>画面の見方｜タクティ DC × Agentforce PoC デモ</title>
+<style>
+  :root{
+    --sf-blue:#0b5cab; --bg:#f3f6f9; --card:#fff; --line:#d8dde6; --ink:#16325c;
+    --muted:#5e6c84; --accent:#0176d3; --ok:#2e844a; --warn:#fe9339; --bad:#ba0517;
+    --chip:#eef4fb; --agent:#7e3ff2; --agent-bg:#f5f0ff;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Hiragino Kaku Gothic ProN","Yu Gothic UI","Segoe UI",sans-serif;
+    background:var(--bg);color:var(--ink);font-size:13.5px;line-height:1.7;}
+  header{background:var(--sf-blue);color:#fff;padding:10px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    box-shadow:0 2px 4px rgba(0,0,0,.15);position:sticky;top:0;z-index:10;}
+  header .logo{font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px;}
+  header .logo .dot{width:24px;height:24px;border-radius:6px;background:#fff;color:var(--sf-blue);
+    display:flex;align-items:center;justify-content:center;font-weight:800;}
+  header .spacer{flex:1;}
+  header a.demo{background:#fff;color:var(--sf-blue);text-decoration:none;font-weight:700;font-size:12px;
+    border-radius:7px;padding:7px 13px;}
+  .wrap{max-width:900px;margin:0 auto;padding:18px;}
+  /* TOC */
+  .toc{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin-bottom:18px;
+    box-shadow:0 1px 2px rgba(0,0,0,.04);}
+  .toc h2{margin:0 0 8px;font-size:13px;color:var(--muted);}
+  .toc ol{margin:0;padding-left:20px;columns:2;column-gap:24px;}
+  .toc a{color:var(--accent);text-decoration:none;font-weight:600;font-size:12.5px;}
+  .toc a:hover{text-decoration:underline;}
+  section{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-bottom:16px;
+    box-shadow:0 1px 2px rgba(0,0,0,.04);}
+  h1{font-size:20px;margin:6px 0 4px;}
+  .sub{color:var(--muted);font-size:12.5px;margin:0 0 16px;}
+  h2.sec{font-size:16px;margin:0 0 12px;padding-bottom:8px;border-bottom:2px solid var(--accent);display:flex;align-items:center;gap:9px;}
+  h2.sec .nb{width:24px;height:24px;border-radius:7px;background:var(--accent);color:#fff;font-size:13px;font-weight:800;
+    display:flex;align-items:center;justify-content:center;}
+  h3{font-size:14px;margin:16px 0 7px;color:var(--ink);}
+  p{margin:7px 0;}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;margin:10px 0;}
+  th,td{text-align:left;padding:8px 11px;border:1px solid var(--line);vertical-align:top;}
+  th{background:#f7f9fb;color:var(--muted);font-weight:700;font-size:11.5px;}
+  .callout{border-radius:9px;padding:11px 14px;margin:12px 0;font-size:12.5px;line-height:1.7;}
+  .callout.blue{background:#eef4fb;border:1px solid #cfe2f5;color:#0a4a8a;}
+  .callout.purple{background:var(--agent-bg);border:1px solid #e7dcfa;color:#5b3aa6;}
+  .callout.amber{background:#fff8e1;border:1px solid #f0d98a;color:#7a5c00;}
+  .callout.green{background:#e7f3ec;border:1px solid #bfe3cb;color:#1f6b3b;}
+  .callout b{font-weight:700;}
+  .badge{font-size:10.5px;font-weight:700;border-radius:5px;padding:2px 8px;display:inline-block;white-space:nowrap;}
+  .b-h{background:#e7f3ec;color:var(--ok);} .b-m{background:#fff0db;color:#a85b00;} .b-l{background:#fbe7e7;color:var(--bad);}
+  .b-new{background:#eef0fb;color:#3b4cc0;} .b-qty{background:#fde7d6;color:#b3541e;}
+  .steps{counter-reset:s;list-style:none;padding-left:0;margin:10px 0;}
+  .steps li{counter-increment:s;position:relative;padding:6px 0 6px 34px;border-bottom:1px dashed var(--line);}
+  .steps li:last-child{border-bottom:none;}
+  .steps li::before{content:counter(s);position:absolute;left:0;top:6px;width:22px;height:22px;border-radius:50%;
+    background:var(--accent);color:#fff;font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center;}
+  .ui{font-weight:700;color:var(--accent);}
+  .kbd{font-family:ui-monospace,Menlo,monospace;background:#f1f5f9;border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-size:11.5px;}
+  .formula{background:#fafcfe;border:1px solid var(--line);border-radius:8px;padding:12px 14px;font-size:13px;text-align:center;margin:10px 0;}
+  .formula b{color:var(--accent);}
+  .look{background:#f7f9fb;border-left:3px solid var(--ok);border-radius:5px;padding:8px 12px;margin:10px 0;font-size:12.5px;}
+  .look b{color:var(--ok);}
+  .foot{text-align:center;color:#9aa7b8;font-size:11px;padding:8px 0 28px;}
+  a.top{font-size:11px;color:var(--muted);text-decoration:none;float:right;}
+  @media(max-width:680px){.toc ol{columns:1;}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><span class="dot">T</span> タクティ｜DC × Agentforce PoC <span style="opacity:.85;font-size:12px;">画面の見方ガイド</span></div>
+  <div class="spacer"></div>
+  <a class="demo" href="index.html">▶ デモを開く</a>
+</header>
+
+<div class="wrap">
+  <h1>画面の見方・確度ルール ガイド</h1>
+  <p class="sub">本デモ（仕様合意用モックアップ）の各画面の読み方と、AIが出す「確度（確信度）」の決め方を説明します。要件定義書 v0.1 準拠。</p>
+
+  <div class="toc">
+    <h2>目次</h2>
+    <ol>
+      <li><a href="#intro">はじめに（前提・KPI・スコープ）</a></li>
+      <li><a href="#conf">確度（確信度）の考え方（共通）</a></li>
+      <li><a href="#t1">① Navigator（船別・部品検索）の見方</a></li>
+      <li><a href="#t2">② サプライヤー推奨 の見方</a></li>
+      <li><a href="#t3">③ 納期督促（Flow）の見方</a></li>
+      <li><a href="#t4">④ 見積書突合（OCR・別線）の見方</a></li>
+      <li><a href="#data">データについて（匿名化／実データ）</a></li>
+      <li><a href="#glossary">用語集</a></li>
+    </ol>
+  </div>
+
+  <!-- 0. はじめに -->
+  <section id="intro">
+    <h2 class="sec"><span class="nb">0</span> はじめに</h2>
+    <p>本画面は、Salesforce 上に AI（Agentforce）を組み込んで「見積業務の<b>検索・転記・督促</b>」を効率化する PoC の<b>体験イメージ（モックアップ）</b>です。実装前に「こういう動きで合っているか」を確認・合意いただくためのものです。</p>
+    <div class="callout amber">⚠️ <b>これはモックアップです。</b> サンプルデータで動作しており、Salesforce / Data 360 とは未接続です。表示される数値（精度・スコア等）は到達イメージで、実データ反映後に確定します。</div>
+    <h3>本 PoC のスコープ（3テーマ）</h3>
+    <table>
+      <tr><th>テーマ</th><th>内容</th><th>狙い</th></tr>
+      <tr><td>① Navigator</td><td>船名＋部品の自然言語検索 → 製造業者・型式・サプライヤーを回答</td><td>部品情報検索の属人化を解消</td></tr>
+      <tr><td>② サプライヤー推奨</td><td>見積品目登録時に推奨サプライヤー TOP3 を自動提示</td><td>見積先選定（月516分）の削減</td></tr>
+      <tr><td>③ 納期督促</td><td>納期超過の発注を検知し担当・上長へ自動通知</td><td>納期遅延の検知漏れ防止</td></tr>
+    </table>
+    <div class="callout purple"><b>④ 見積書突合（OCR）は「別線スコープ」</b>です。本 PoC の対象外（Out of Scope）で、参考イメージとして提示しています。正式化する場合は別途お見積りとなります。</div>
+    <h3>精度の目標（KPI）</h3>
+    <table>
+      <tr><th>指標</th><th>意味</th><th>目標</th></tr>
+      <tr><td>TOP1 正解率</td><td>AIの<b>第1候補</b>が正解と一致した割合</td><td>≥ 70%</td></tr>
+      <tr><td>TOP3 正解率</td><td>正解が<b>上位3件以内</b>に含まれた割合</td><td>≥ 90%</td></tr>
+    </table>
+    <p style="font-size:12px;color:var(--muted)">※ サプライヤー推奨は「採用率」で評価（TOP1採用率 ≥ 60% / TOP3採用率 ≥ 85%）。</p>
+  </section>
+
+  <!-- 1. 確度の考え方 -->
+  <section id="conf">
+    <h2 class="sec"><span class="nb">1</span> 確度（確信度）の考え方<a class="top" href="#">▲ 目次へ</a></h2>
+    <p>AIの回答には必ず<b>「どれくらい自信があるか」</b>を添えます。確信度が低いものは人が確認する、という運用を前提にしています。テーマごとに表現が異なります。</p>
+
+    <h3>① Navigator：確信度 = 高 / 中 / 低（＋該当なし）</h3>
+    <p>「同じ船 × 同じ部品」の<b>過去の成約実績の件数と新しさ</b>で決まります。</p>
+    <table>
+      <tr><th>確信度</th><th>判定条件</th><th>画面の挙動</th></tr>
+      <tr><td><span class="badge b-h">高</span></td><td>同一船舶 × 同一部品の成約実績が <b>直近1年以内に3件以上</b></td><td>製造業者・型式を<b>断定</b>して提示</td></tr>
+      <tr><td><span class="badge b-m">中</span></td><td>成約実績が <b>1〜2件</b>（根拠が限定的）</td><td>候補は出すが、<b>価格・適合は人の確認を推奨</b></td></tr>
+      <tr><td><span class="badge b-l">低</span></td><td>同一船舶での実績が<b>なし</b> → 同型船舶へ範囲を広げて候補提示</td><td>「同型船舶の参考」と明示</td></tr>
+      <tr><td><span class="badge b-l">該当なし</span></td><td>過去見積・マスタに<b>一切ヒットしない</b></td><td><b>推測で答えず</b>「該当データがありません。手動確認をお願いします」</td></tr>
+    </table>
+    <div class="callout green"><b>ハルシネーション（AIの作り話）対策：</b> 根拠（過去見積レコード）がない場合は<b>断定しません</b>。必ず Salesforce のレコードを根拠に回答します。</div>
+    <p>各候補の右に出る <b>「適合度 ◯%」</b> は、その部品候補がどれくらい確からしいかを相対表示したものです（緑＝高 / 橙＝中 / 赤＝低）。</p>
+
+    <h3>② サプライヤー推奨：Confidence__c = 0〜1 のスコア</h3>
+    <p>3つの観点を重み付けして合算した <b>0〜1 のスコア</b>で順位付けします。重みは画面のスライダーで調整でき、定例で合意して確定します。</p>
+    <div class="formula"><b>スコア = 0.5 ×（ルール）＋ 0.3 ×（類似）＋ 0.2 ×（マスタ）</b></div>
+    <table>
+      <tr><th>観点</th><th>意味</th><th>初期重み</th></tr>
+      <tr><td>① ルール</td><td><b>同じ船 × 同じ部品番号</b>で直近に成約したサプライヤー（最も確実）</td><td>0.5</td></tr>
+      <tr><td>② 類似</td><td><b>同型船舶 × 同じ部品番号</b>で成約した実績（AIの類似度判定）</td><td>0.3</td></tr>
+      <tr><td>③ マスタ</td><td>そのメーカーの<b>正規代理店</b>フラグ</td><td>0.2</td></tr>
+    </table>
+    <p>スコアの色：<span class="badge b-h">0.80以上＝高</span>　<span class="badge b-m">0.60〜0.79＝中</span>　<span class="badge b-l">0.60未満＝低</span>。各候補には「推奨理由（同船舶で過去3回成約 等）」が必ず付きます。</p>
+
+    <h3>③ 納期督促：段階による「督促する／しない／保留」</h3>
+    <p>確率スコアではなく、<b>納期超過の営業日数</b>で機械的に判定します（詳細は §3）。</p>
+
+    <h3>④ 見積書突合（OCR・別線）：突合の確度＋差異タイプ</h3>
+    <p>OCRの読取と突合の確からしさを %で表示。<b>高確度で一致＝自動確定</b>、<b>差異あり＝要確認</b>として人が確定します（詳細は §4）。</p>
+  </section>
+
+  <!-- 2. Navigator -->
+  <section id="t1">
+    <h2 class="sec"><span class="nb">①</span> Navigator（船別・部品検索）の見方<a class="top" href="#">▲ 目次へ</a></h2>
+    <p>営業担当が、検索条件を組まずに<b>自然言語で質問</b>するだけで、過去見積・マスタを根拠に答えが返る画面です。</p>
+    <h3>使い方</h3>
+    <ol class="steps">
+      <li>上部の入力欄に <span class="ui">「〇〇丸の △△ の製造業者は？」</span> のように入力（下の<span class="ui">候補チップ</span>をクリックでも可）。</li>
+      <li><span class="ui">問い合わせ</span>を押すと、AIの回答カードが表示されます。</li>
+      <li>回答上部に <b>確信度（高/中/低）</b>、本文に <b>製造業者／型式／推奨サプライヤー TOP3</b>。</li>
+      <li>下の <b>【根拠】</b> 欄に、回答の根拠になった<b>過去見積レコード（最大3件）</b>。実運用ではクリックで原本を開けます。</li>
+    </ol>
+    <div class="look"><b>見るべきポイント：</b> ①確信度が「高」か、②TOP3に妥当なサプライヤーが並ぶか、③根拠の過去見積が納得できるか。確信度「中／低」や「該当なし」は、AIが無理に断定しない設計になっているかをご確認ください。</div>
+    <h3>入力のパターン（例）</h3>
+    <table>
+      <tr><th>聞き方</th><th>返るもの</th></tr>
+      <tr><td>船名 ＋ 部品名（「主機の燃料ポンプの製造業者は？」）</td><td>製造業者・型式・推奨サプライヤー</td></tr>
+      <tr><td>船名 ＋ 部品番号（「PartNo ◯◯ を扱ったサプライヤーは？」）</td><td>成約回数順のサプライヤー</td></tr>
+      <tr><td>型番（「◯◯ の代替メーカー候補は？」）</td><td>代替候補（確信度は中になりやすい）</td></tr>
+    </table>
+  </section>
+
+  <!-- 3. 推奨 -->
+  <section id="t2">
+    <h2 class="sec"><span class="nb">②</span> サプライヤー推奨 の見方<a class="top" href="#">▲ 目次へ</a></h2>
+    <p>見積品目を登録した瞬間に、<b>推奨サプライヤー TOP3</b> が理由つきで並ぶ画面です。</p>
+    <h3>使い方</h3>
+    <ol class="steps">
+      <li>上部で <span class="ui">見積品目（船 × 部品）</span> を選択。</li>
+      <li><span class="ui">重みスライダー（ルール／類似／マスタ）</span>を動かすと、<b>その場で順位が再計算</b>されます。</li>
+      <li>各候補に <b>総合スコア（Confidence__c 0〜1）</b>・<b>推奨理由</b>・<b>サブスコア（ルール／類似／マスタ）</b>が表示されます。</li>
+      <li><span class="ui">採用／却下</span>ボタンで判断を記録。<b>自動採用はしません（手動承認）</b>。却下理由は AI 学習に使われます。</li>
+    </ol>
+    <div class="look"><b>見るべきポイント：</b> 第1候補が現場の感覚と合うか。合わない場合は<b>重みの配分</b>（例：価格重視なら…ではなく、ルール／類似／マスタのどれを重く見るか）を調整して、納得の並びになる配分を一緒に決めます。</div>
+    <div class="callout blue">「正規代理店」マークは、メーカー公認の取扱店であることを示します（マスタ観点のスコアに反映）。</div>
+  </section>
+
+  <!-- 4. 督促 -->
+  <section id="t3">
+    <h2 class="sec"><span class="nb">③</span> 納期督促（Flow）の見方<a class="top" href="#">▲ 目次へ</a></h2>
+    <p>「発注済かつ納期超過」の案件を、<b>毎営業日 09:00</b> に自動チェックし、担当・上長へ通知する画面です。鳴りすぎないよう段階を制御します。</p>
+    <h3>督促の段階（超過した営業日数で判定）</h3>
+    <table>
+      <tr><th>段階</th><th>条件</th><th>通知先</th></tr>
+      <tr><td><span class="badge b-m">初回督促</span></td><td>納期を <b>+1 営業日</b> 超過</td><td>案件担当者</td></tr>
+      <tr><td><span class="badge b-qty">再督促</span></td><td><b>+3 営業日</b> 超過（前回通知から3営業日経過ごと）</td><td>案件担当者</td></tr>
+      <tr><td><span class="badge b-l">上長エスカ</span></td><td><b>+7 営業日</b> 超過</td><td>上長（<b>1回のみ</b>）</td></tr>
+    </table>
+    <h3>「督促しない／保留」になる条件</h3>
+    <table>
+      <tr><th>判定</th><th>条件</th><th>かわりに何をするか</th></tr>
+      <tr><td><span class="badge b-h">督促しない</span></td><td>回答済かつ納期内</td><td>何もしない（過剰督促の防止）</td></tr>
+      <tr><td><span class="badge b-h">督促しない</span></td><td>出荷済（連絡漏れ）</td><td>督促ではなく「ステータス更新依頼」</td></tr>
+      <tr><td><span class="badge b-m">保留</span></td><td>前回督促から<b>3営業日未経過</b></td><td>再督促を見送り（鳴りすぎ防止）</td></tr>
+    </table>
+    <h3>使い方</h3>
+    <ol class="steps">
+      <li>表で、督促対象（赤背景）と段階・通知先・判定理由を確認。</li>
+      <li><span class="ui">Slack DM 生成</span>を押すと、AIが宛先・文面の<b>下書き</b>を作成。</li>
+      <li>メッセージ内の <span class="kbd">納期を更新する</span> <span class="kbd">サプライヤー連絡を記録する</span> から、その場で対応できます。</li>
+    </ol>
+    <div class="look"><b>見るべきポイント：</b> 「督促すべきものを漏れなく」かつ「不要な督促をしない」の両立。土日祝はカウントしない（営業日ベース）点もご確認ください。</div>
+  </section>
+
+  <!-- 5. OCR -->
+  <section id="t4">
+    <h2 class="sec"><span class="nb">④</span> 見積書突合（OCR・<b style="color:var(--agent)">別線</b>）の見方<a class="top" href="#">▲ 目次へ</a></h2>
+    <div class="callout purple"><b>このタブは別線スコープ（本 PoC の対象外）です。</b> 5/28 にご議論いただいた「見積書突合」の体験イメージとして参考提示しています。</div>
+    <p>サプライヤー返送の<b>見積書PDFをOCRで読み取り</b>、依頼書（RFQ）と<b>明細単位で突合</b>。高確度の一致は自動確定し、差異のある明細だけ人が確認 → ボタンで一括反映します。</p>
+    <h3>差異タイプ（Diff_Type）の見方</h3>
+    <table>
+      <tr><th>差異</th><th>意味</th><th>確認</th></tr>
+      <tr><td><span class="badge b-h">一致</span></td><td>品名・品番ともに一致</td><td>自動確定（人手不要）</td></tr>
+      <tr><td><span class="badge b-m">品名／品番 表記差異</span></td><td>表記揺れをAI類似度で同一と判定</td><td>要確認（候補から選択）</td></tr>
+      <tr><td><span class="badge b-qty">数量差異</span></td><td>品番一致だが数量が相違</td><td>要確認</td></tr>
+      <tr><td><span class="badge b-new">新規（依頼外）</span></td><td>見積書のみに存在（サプライヤー提案の追加品）</td><td>採否を確認</td></tr>
+      <tr><td><span class="badge b-l">欠落（未見積）</span></td><td>依頼したのに見積もられていない</td><td>再見積を依頼</td></tr>
+    </table>
+    <h3>使い方</h3>
+    <ol class="steps">
+      <li>上部で「依頼書（RFQ）」と「見積書（OCR読取）」の対を確認。</li>
+      <li>表で各明細の<b>差異タイプ</b>と<b>確度%</b>を確認。「一致（高確度）」は自動確定済。</li>
+      <li>差異のある明細の <span class="ui">内容を確認 ▸</span> を押して確定。<b>確定済の件数</b>が進みます。</li>
+      <li>全件確定すると <span class="ui">一括反映</span>ボタンが有効化 → Salesforce へまとめて反映（自動反映はしません）。</li>
+    </ol>
+    <div class="look"><b>見るべきポイント：</b> 表記揺れ（英略称・品番の区切り等）をAIがどこまで吸収できるか。最終確認は必ず人が行うハイブリッド運用になっている点。</div>
+  </section>
+
+  <!-- 6. データ -->
+  <section id="data">
+    <h2 class="sec"><span class="nb">2</span> データについて<a class="top" href="#">▲ 目次へ</a></h2>
+    <p>本デモは、ご提供いただいた<b>実際の見積書59件</b>を解析して作成しています。共有用の本ページ（公開版）は、機密保護のため以下を<b>匿名化</b>しています。</p>
+    <table>
+      <tr><th>項目</th><th>公開版（本ページ）</th><th>実データ版（社内・お打ち合わせ用）</th></tr>
+      <tr><td>船名</td><td>M/V VESSEL-01 … にマスク</td><td>実船名</td></tr>
+      <tr><td>サプライヤー名</td><td>サプライヤー01 … にマスク</td><td>実サプライヤー名</td></tr>
+      <tr><td>価格・部品番号</td><td>マスク（■）</td><td>実価格・実品番</td></tr>
+      <tr><td>部品名・型式</td><td>そのまま表示</td><td>そのまま表示</td></tr>
+    </table>
+    <div class="callout blue">お打ち合わせでは、実データ版（実船名・実サプライヤーで動く版）を画面共有でご覧いただけます。実装フェーズでは Mariapps 等の実データを反映して精度を確定します。</div>
+  </section>
+
+  <!-- 7. 用語集 -->
+  <section id="glossary">
+    <h2 class="sec"><span class="nb">3</span> 用語集<a class="top" href="#">▲ 目次へ</a></h2>
+    <table>
+      <tr><th>用語</th><th>意味</th></tr>
+      <tr><td>確信度（高/中/低）</td><td>Navigator の回答の自信度。過去成約の件数と新しさで決まる。</td></tr>
+      <tr><td>TOP1 / TOP3</td><td>AIの第1候補／上位3件。精度はこの両方で評価。</td></tr>
+      <tr><td>Confidence__c</td><td>サプライヤー推奨の総合スコア（0〜1）。ルール/類似/マスタの加重和。</td></tr>
+      <tr><td>ルール／類似／マスタ</td><td>推奨スコアの3観点。同船成約／同型船類似／正規代理店。</td></tr>
+      <tr><td>RFQ</td><td>見積依頼（Request for Quotation）。依頼書。</td></tr>
+      <tr><td>正規代理店</td><td>メーカー公認の取扱店。マスタ観点で加点。</td></tr>
+      <tr><td>別線スコープ</td><td>本 PoC の対象外で、別途検討する範囲（OCR突合など）。</td></tr>
+      <tr><td>ハルシネーション</td><td>AIが根拠なく作り話をすること。本デモは根拠がなければ断定しない設計。</td></tr>
+      <tr><td>モックアップ</td><td>実装前の体験イメージ画面。実システムとは未接続。</td></tr>
+    </table>
+  </section>
+
+  <div class="foot">タクティ株式会社 ｜ DC × Agentforce PoC（2026/5–7）｜ 画面の見方ガイド ｜ Glue Inc.</div>
+</div>
+</body>
+</html>
